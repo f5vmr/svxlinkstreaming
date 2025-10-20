@@ -132,6 +132,19 @@ if [[ -f "$ICECAST_XML" ]]; then
 else
   warn "No /etc/icecast2/icecast.xml found — cannot extract password."
 fi
+# --- Replace 'your_domain' with provided public URL in darkice.cfg ---
+if [[ -n "$STREAM_URL" ]]; then
+  # Strip protocol prefix (http:// or https://) and port (if any) for darkice
+  CLEAN_DOMAIN=$(echo "$STREAM_URL" | sed -E 's#https?://##; s#/.*##')
+  if grep -q "your_domain" "$DEST_DARKICE_CFG"; then
+    sed -i "s/your_domain/$CLEAN_DOMAIN/" "$DEST_DARKICE_CFG"
+    ok "Replaced 'your_domain' with '$CLEAN_DOMAIN' in darkice.cfg."
+  else
+    warn "No 'your_domain' placeholder found in $DEST_DARKICE_CFG; skipping domain substitution."
+  fi
+else
+  warn "No stream URL provided; 'your_domain' left unchanged in darkice.cfg."
+fi
 
 # --- Modify svxlink.conf only if TxStream found ---
 if $HAS_TXSTREAM; then
