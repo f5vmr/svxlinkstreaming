@@ -1,0 +1,30 @@
+First we need to determine that the correct svxlink is installed.
+The user needs to be asked by whiptail to confirm that they have installed svxlink 
+with svxlinkbuilder/svxlink Image 
+If they say no then go to ## install 
+## Wec Check that the correct Svxlink is installed and it is the acceptable
+version by looking for [TxStream] anyway in the /etc/svxlink/svxlink.conf 
+# If ![TxStream] report the version you have is not compatible
+Darkice will be installed, but you will need to configure your version
+of svxlink yourself. #Jump to ## Install. 
+##configure
+Here we created the darkice.cfg by copying the blank file 
+first. 
+sudo cp svxlinkstreaming/darkice.cfg /etc/
+sudo cp svxlinkstreaming/darkice.service /etc/systemd/system/
+Now add darkice.sh to scripts. and 
+add line to sudo crontab -e @reboot /home/pi/scripts/darkice.sh
+#query what URL have you for the public view of your stream?
+#eg http://portal.svxlink.uk:8010/stream 
+#NB Your port will be set at 8000.
+## Install
+Be aware the user will  be asked for three passwords by Icecast 1. Source 2. Relay 3. Admin
+Install Darkice icecast2
+When installing passwords in icecast2 we need try to grab the 'source' Password into a variable to swap with 'source'
+for use in darkice.cfg, where there is a place holder source.
+Once icecast2 is installed need to add a new line to /etc/default/icecast2
+ENABLE=true
+Now we need to change in /etc/svxlink/svxlink in [Tx1] Change TX=Tx1 to TX=MultiTx
+
+Now we enable all the services 
+sudo systemctl enable darkice icecast2 --now.
