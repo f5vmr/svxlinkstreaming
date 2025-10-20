@@ -4,5 +4,6 @@ If you attempt to install this in any other version of svxlink you shall have th
 
 To install sudo git clone to your base directory. 
 First sudo apt install -y git. 
-Then run this command.
+sudo git clone https://github.com/f5vmr/svxlinkstreaming 
+Then run this command when it is complete.
 sudo ./svxlinkstreaming/install.sh
