@@ -145,6 +145,22 @@ if [[ -n "$STREAM_URL" ]]; then
 else
   warn "No stream URL provided; 'your_domain' left unchanged in darkice.cfg."
 fi
+# --- Replace 'callsign' placeholder in darkice.cfg with actual CALLSIGN from svxlink.conf ---
+if [[ -f "$SVXLINK_CONF" ]]; then
+  CALLSIGN=$(grep -m1 '^CALLSIGN=' "$SVXLINK_CONF" | cut -d'=' -f2 | tr -d '[:space:]')
+  if [[ -n "$CALLSIGN" ]]; then
+    if grep -q "callsign" "$DEST_DARKICE_CFG"; then
+      sed -i "s/callsign/$CALLSIGN/" "$DEST_DARKICE_CFG"
+      ok "Replaced 'callsign' placeholder with actual CALLSIGN '$CALLSIGN' in darkice.cfg."
+    else
+      warn "No 'callsign' placeholder found in $DEST_DARKICE_CFG."
+    fi
+  else
+    warn "CALLSIGN= not found or empty in $SVXLINK_CONF; leaving 'callsign' placeholder as is."
+  fi
+else
+  warn "$SVXLINK_CONF missing; cannot extract CALLSIGN."
+fi
 
 # --- Modify svxlink.conf only if TxStream found ---
 if $HAS_TXSTREAM; then
