@@ -65,7 +65,7 @@ fi
 
 # --- Ask for stream URL (optional note) ---
 STREAM_URL=$(whiptail --inputbox \
-  "Enter your public stream URL (e.g. http://portal.svxlink.uk:8010/stream)\nThis is for your records only." \
+  "Enter your public stream URL (e.g. http://portal.svxlink.uk:8010/stream or \n http://192.168.1.120:8000/stream )\nThis is for your records only." \
   12 80 "" --title "Public stream URL" 3>&1 1>&2 2>&3) || true
 STREAM_URL=${STREAM_URL:-""}
 [[ -n "$STREAM_URL" ]] && ok "Stream URL noted: $STREAM_URL" || warn "No public stream URL provided."
@@ -194,7 +194,7 @@ echo "     sudo systemctl status icecast2.service"
 echo
 [[ -n "$STREAM_URL" ]] && info "Public stream URL: $STREAM_URL"
 echo
-ok "A reboot is recommended to verify @reboot startup."
+ok "A reboot is Unneccesary to verify @reboot startup."
 echo
 info "Log file: $LOG_FILE"
 echo -e "\n=== Setup complete: $(date) ===\n"
