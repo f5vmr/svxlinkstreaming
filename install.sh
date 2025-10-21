@@ -167,6 +167,26 @@ if [[ -f "$SVXLINK_CONF" ]]; then
 else
   warn "$SVXLINK_CONF missing; cannot extract CALLSIGN."
 fi
+# --- Personalize Icecast2 web pages with CALLSIGN ---
+ICECAST_WEB_DIR="/usr/share/icecast2/web"
+
+if [[ -n "${CALLSIGN:-}" && -d "$ICECAST_WEB_DIR" ]]; then
+  info "Replacing 'Icecast2' branding with '$CALLSIGN' in Icecast web interface..."
+  
+  # Backup originals once per run
+  BACKUP_DIR="/usr/share/icecast2/web_backup_$(date +%Y%m%d_%H%M%S)"
+  cp -r "$ICECAST_WEB_DIR" "$BACKUP_DIR"
+  ok "Original Icecast web files backed up to $BACKUP_DIR"
+
+  # Recursively find all text-like files (html, xml, xsl, etc.) and replace case-sensitive 'Icecast2' with CALLSIGN
+  find "$ICECAST_WEB_DIR" -type f \
+    \( -iname "*.html" -o -iname "*.htm" -o -iname "*.xsl" -o -iname "*.xml" -o -iname "*.txt" \) \
+    -exec sed -i "s/Icecast2/${CALLSIGN}/g" {} +
+
+  ok "Icecast web interface customized with callsign '$CALLSIGN'."
+else
+  warn "CALLSIGN not available or Icecast web directory missing; skipping web interface customization."
+fi
 
 # --- Modify svxlink.conf only if TxStream found ---
 if $HAS_TXSTREAM; then
