@@ -103,6 +103,16 @@ chmod +x "$DEST_SCRIPT"
 chown pi:pi "$DEST_SCRIPT" || true
 ok "Darkice files copied successfully."
 
+# --- DEBUG: verify copied config and variables before substitutions ---
+echo "DEBUG: DEST_DARKICE_CFG = '$DEST_DARKICE_CFG'"
+if [[ -f "$DEST_DARKICE_CFG" ]]; then
+    echo "DEBUG: File exists: $(ls -l "$DEST_DARKICE_CFG")"
+else
+    warn "DEBUG: $DEST_DARKICE_CFG does not exist!"
+fi
+echo "DEBUG: STREAM_URL = '$STREAM_URL'"
+echo "DEBUG: CALLSIGN (if already extracted) = '${CALLSIGN:-not set}'"
+
 # --- Install Darkice + Icecast2 ---
 info "Installing Darkice and Icecast2 (interactive password setup follows)..."
 apt-get update
@@ -124,35 +134,36 @@ if [[ -f "$ICECAST_XML" ]]; then
   ICECAST_SOURCE_PASSWORD=$(grep -oP "(?<=<source-password>).*?(?=</source-password>)" "$ICECAST_XML" | head -n1 || true)
   if [[ -n "$ICECAST_SOURCE_PASSWORD" ]]; then
     ESCAPED_PASS=$(printf '%s\n' "$ICECAST_SOURCE_PASSWORD" | sed -e 's/[\/&]/\\&/g')
-    sed -i -r "s/(password *= *)source/\1$ESCAPED_PASS/" "$DEST_DARKICE_CFG" || true
-    ok "Replaced placeholder password = source with actual Icecast source password."
+    if [[ -f "$DEST_DARKICE_CFG" ]]; then
+        sed -i -r "s/(password *= *)source/\1$ESCAPED_PASS/" "$DEST_DARKICE_CFG"
+        ok "Replaced placeholder password = source with actual Icecast source password."
+    else
+        warn "$DEST_DARKICE_CFG missing; cannot replace password."
+    fi
   else
     warn "Could not extract <source-password>; edit /etc/darkice.cfg manually."
   fi
 else
   warn "No /etc/icecast2/icecast.xml found — cannot extract password."
 fi
-# --- Replace 'your_domain' with provided public URL in darkice.cfg ---
-if [[ -n "$STREAM_URL" ]]; then
-  # Remove only a trailing slash if user added one accidentally
-  CLEAN_URL=$(echo "$STREAM_URL" | sed -E 's#/$##')
 
-  # Escape special characters for sed
+# --- Replace 'your_domain' with provided public URL in darkice.cfg ---
+if [[ -n "$STREAM_URL" && -f "$DEST_DARKICE_CFG" ]]; then
+  CLEAN_URL=$(echo "$STREAM_URL" | sed -E 's#/$##')
   ESCAPED_URL=$(printf '%s\n' "$CLEAN_URL" | sed -e 's/[\/&]/\\&/g')
 
   if grep -q "your_domain" "$DEST_DARKICE_CFG"; then
-    # Match 'server =' or 'server=' variants
     sed -i -E "s#(server[[:space:]]*=[[:space:]]*)your_domain#\1$ESCAPED_URL#" "$DEST_DARKICE_CFG"
     ok "Replaced 'your_domain' with full URL '$CLEAN_URL' in darkice.cfg."
   else
     warn "No 'your_domain' placeholder found in $DEST_DARKICE_CFG; skipping domain substitution."
   fi
 else
-  warn "No stream URL provided; 'your_domain' left unchanged in darkice.cfg."
+  warn "No stream URL provided or darkice.cfg missing; skipping 'your_domain' replacement."
 fi
 
 # --- Replace 'callsign' placeholder in darkice.cfg with actual CALLSIGN from svxlink.conf ---
-if [[ -f "$SVXLINK_CONF" ]]; then
+if [[ -f "$SVXLINK_CONF" && -f "$DEST_DARKICE_CFG" ]]; then
   CALLSIGN=$(grep -m1 '^CALLSIGN=' "$SVXLINK_CONF" | cut -d'=' -f2 | tr -d '[:space:]')
   if [[ -n "$CALLSIGN" ]]; then
     if grep -q "callsign" "$DEST_DARKICE_CFG"; then
@@ -165,20 +176,19 @@ if [[ -f "$SVXLINK_CONF" ]]; then
     warn "CALLSIGN= not found or empty in $SVXLINK_CONF; leaving 'callsign' placeholder as is."
   fi
 else
-  warn "$SVXLINK_CONF missing; cannot extract CALLSIGN."
+  warn "$SVXLINK_CONF missing or darkice.cfg missing; cannot replace callsign."
 fi
+
 # --- Personalize Icecast2 web pages with CALLSIGN ---
 ICECAST_WEB_DIR="/usr/share/icecast2/web"
 
 if [[ -n "${CALLSIGN:-}" && -d "$ICECAST_WEB_DIR" ]]; then
   info "Replacing 'Icecast2' branding with '$CALLSIGN' in Icecast web interface..."
   
-  # Backup originals once per run
   BACKUP_DIR="/usr/share/icecast2/web_backup_$(date +%Y%m%d_%H%M%S)"
   cp -r "$ICECAST_WEB_DIR" "$BACKUP_DIR"
   ok "Original Icecast web files backed up to $BACKUP_DIR"
 
-  # Recursively find all text-like files (html, xml, xsl, etc.) and replace case-sensitive 'Icecast2' with CALLSIGN
   find "$ICECAST_WEB_DIR" -type f \
     \( -iname "*.html" -o -iname "*.htm" -o -iname "*.xsl" -o -iname "*.xml" -o -iname "*.txt" \) \
     -exec sed -i "s/Icecast2/${CALLSIGN}/g" {} +
@@ -199,7 +209,6 @@ if $HAS_TXSTREAM; then
     /^\[.*\]/  {if(in_tx1){in_tx1=0}; print; next}
     {
       if (in_tx1 && $0 ~ /^[[:space:]]*TX[[:space:]]*=[[:space:]]*Tx1[[:space:]]*$/) {
-        # Normalize spacing to single = and set to MultiTx
         sub(/^[[:space:]]*TX[[:space:]]*=[[:space:]]*Tx1[[:space:]]*$/, "TX=MultiTx")
       }
       print
@@ -210,7 +219,6 @@ if $HAS_TXSTREAM; then
 else
   warn "Skipping svxlink.conf modification."
 fi
-
 
 # --- Enable and start services ---
 systemctl daemon-reload
@@ -240,7 +248,7 @@ echo "     sudo systemctl status icecast2.service"
 echo
 [[ -n "$STREAM_URL" ]] && info "Public stream URL: $STREAM_URL"
 echo
-ok "A reboot is Unneccesary to verify @reboot startup."
+ok "A reboot is unnecessary to verify @reboot startup."
 echo
 info "Log file: $LOG_FILE"
 echo -e "\n=== Setup complete: $(date) ===\n"
