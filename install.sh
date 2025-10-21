@@ -111,6 +111,7 @@ SRC_DIR="$CWD/svxlinkstreaming"
 DEST_DARKICE_CFG="/etc/darkice.cfg"
 DEST_DARKICE_SERVICE="/etc/systemd/system/darkice.service"
 DEST_SCRIPT="/home/pi/scripts/darkice.sh"
+ICECAST_WEB_DIR="/usr/share/icecast2/web"
 
 # Validate source files
 [[ -f "$SRC_DIR/darkice.cfg" ]] || die "Missing $SRC_DIR/darkice.cfg"
@@ -244,7 +245,7 @@ else
     warn "CALLSIGN not set or darkice.cfg missing; skipping substitution."
 fi
 
-#ICECAST_WEB_DIR="/usr/share/icecast2/web"
+
 if [[ -n "$CALLSIGN" && -d "$ICECAST_WEB_DIR" ]]; then
     info "Customizing Icecast web interface (.xsl files only) with CALLSIGN '$CALLSIGN'..."
     
