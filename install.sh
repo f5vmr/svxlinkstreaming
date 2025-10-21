@@ -148,19 +148,21 @@ else
 fi
 
 # --- Replace 'your_domain' with provided public URL in darkice.cfg ---
-if [[ -n "$STREAM_URL" && -f "$DEST_DARKICE_CFG" ]]; then
-  CLEAN_URL=$(echo "$STREAM_URL" | sed -E 's#/$##')
-  ESCAPED_URL=$(printf '%s\n' "$CLEAN_URL" | sed -e 's/[\/&]/\\&/g')
+# Ensure the darkice.cfg exists
+if [[ -f "$DEST_DARKICE_CFG" && -n "$STREAM_URL" ]]; then
+    info "Replacing 'your_domain' in darkice.cfg with user-provided URL..."
 
-  if grep -q "your_domain" "$DEST_DARKICE_CFG"; then
-    sed -i -E "s#(server[[:space:]]*=[[:space:]]*)your_domain#\1$ESCAPED_URL#" "$DEST_DARKICE_CFG"
-    ok "Replaced 'your_domain' with full URL '$CLEAN_URL' in darkice.cfg."
-  else
-    warn "No 'your_domain' placeholder found in $DEST_DARKICE_CFG; skipping domain substitution."
-  fi
+    # escape any characters that might confuse sed
+    ESCAPED_URL=$(printf '%s\n' "$STREAM_URL" | sed -e 's/[\/&]/\\&/g')
+
+    # Replace exactly 'your_domain' after 'url =' (allow spaces and optional quotes)
+    sed -i -E 's#^[[:space:]]*url[[:space:]]*=[[:space:]]*"?your_domain"?#url='"$ESCAPED_URL"'#' "$DEST_DARKICE_CFG"
+
+    ok "darkice.cfg updated: url = $STREAM_URL"
 else
-  warn "No stream URL provided or darkice.cfg missing; skipping 'your_domain' replacement."
+    warn "darkice.cfg not found or no URL provided; skipping URL substitution."
 fi
+
 
 # --- Replace 'callsign' placeholder in darkice.cfg with actual CALLSIGN from svxlink.conf ---
 if [[ -f "$SVXLINK_CONF" && -f "$DEST_DARKICE_CFG" ]]; then
