@@ -164,8 +164,8 @@ fi
 
 # --- Replace 'callsign' placeholder in darkice.cfg with actual CALLSIGN from svxlink.conf ---
 if [[ -f "$SVXLINK_CONF" && -f "$DEST_DARKICE_CFG" ]]; then
-  CALLSIGN=$(grep -m1 '^CALLSIGN=' "$SVXLINK_CONF" | cut -d'=' -f2 | tr -d '[:space:]')
-  if [[ -n "$CALLSIGN" ]]; then
+  CALLSIGN=$(grep -m1 '^[[:space:]]*CALLSIGN=' "$SVXLINK_CONF" | grep -v '^[[:space:]]*#' | head -n1 | sed -E 's/^[[:space:]]*CALLSIGN[[:space:]]*=[[:space:]]*//')
+    if [[ -n "$CALLSIGN" ]]; then
     if grep -q "callsign" "$DEST_DARKICE_CFG"; then
       sed -i "s/callsign/$CALLSIGN/" "$DEST_DARKICE_CFG"
       ok "Replaced 'callsign' placeholder with actual CALLSIGN '$CALLSIGN' in darkice.cfg."
@@ -198,27 +198,28 @@ else
   warn "CALLSIGN not available or Icecast web directory missing; skipping web interface customization."
 fi
 
-# --- Modify svxlink.conf only if TxStream found ---
-if $HAS_TXSTREAM; then
-  info "Updating 'TX = Tx1' (any spacing) → 'TX=MultiTx' in [Tx1] section..."
-  TMPFILE=$(mktemp)
+# --- Modify svxlink.conf TX=Tx1 if present ---
+if [[ -f "$SVXLINK_CONF" ]]; then
+    info "Updating 'TX = Tx1' → 'TX=MultiTx' in [SimplexLogic] and [RepeaterLogic] if present..."
 
-  awk '
-    BEGIN {in_tx1=0}
-    /^\[Tx1\]/ {print; in_tx1=1; next}
-    /^\[.*\]/  {if(in_tx1){in_tx1=0}; print; next}
-    {
-      if (in_tx1 && $0 ~ /^[[:space:]]*TX[[:space:]]*=[[:space:]]*Tx1[[:space:]]*$/) {
-        sub(/^[[:space:]]*TX[[:space:]]*=[[:space:]]*Tx1[[:space:]]*$/, "TX=MultiTx")
-      }
-      print
-    }' "$SVXLINK_CONF" > "$TMPFILE"
+    if grep -q '^\[SimplexLogic\]' "$SVXLINK_CONF"; then
+        sed -i '/^\[SimplexLogic\]/,/^\[/ { s/^[[:space:]]*TX[[:space:]]*=[[:space:]]*Tx1\b/TX=MultiTx/ }' "$SVXLINK_CONF"
+        ok "[SimplexLogic] section updated to TX=MultiTx."
+    else
+        warn "[SimplexLogic] section not found; skipping."
+    fi
 
-  mv "$TMPFILE" "$SVXLINK_CONF"
-  ok "svxlink.conf [Tx1] section normalized and updated to TX=MultiTx."
+    if grep -q '^\[RepeaterLogic\]' "$SVXLINK_CONF"; then
+        sed -i '/^\[RepeaterLogic\]/,/^\[/ { s/^[[:space:]]*TX[[:space:]]*=[[:space:]]*Tx1\b/TX=MultiTx/ }' "$SVXLINK_CONF"
+        ok "[RepeaterLogic] section updated to TX=MultiTx."
+    else
+        warn "[RepeaterLogic] section not found; skipping."
+    fi
+
 else
-  warn "Skipping svxlink.conf modification."
+    warn "svxlink.conf missing; skipping TX replacement."
 fi
+
 
 # --- Enable and start services ---
 systemctl daemon-reload
