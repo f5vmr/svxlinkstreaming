@@ -214,22 +214,28 @@ else
     warn "CALLSIGN not set or darkice.cfg missing; skipping substitution."
 fi
 
-ICECAST_WEB_DIR="/usr/share/icecast2/web"
-
+#ICECAST_WEB_DIR="/usr/share/icecast2/web"
 if [[ -n "$CALLSIGN" && -d "$ICECAST_WEB_DIR" ]]; then
-    info "Replacing 'Icecast2' branding with CALLSIGN '$CALLSIGN' in Icecast web interface..."
+    info "Customizing Icecast web interface (.xsl files only) with CALLSIGN '$CALLSIGN'..."
+    
     BACKUP_DIR="${ICECAST_WEB_DIR}_backup_$(date +%Y%m%d_%H%M%S)"
     cp -r "$ICECAST_WEB_DIR" "$BACKUP_DIR"
     ok "Backup of Icecast web files saved to $BACKUP_DIR"
 
-    # Remove sudo inside -exec
-    find "$ICECAST_WEB_DIR" -type f \
-        \( -iname "*.html" -o -iname "*.htm" -o -iname "*.xsl" -o -iname "*.xml" -o -iname "*.txt" \) \
-        -exec sed -i "s/Icecast2/$CALLSIGN/g" {} +
+    # Process all .xsl files
+    find -L "$ICECAST_WEB_DIR" -type f -iname "*.xsl" | while read -r file; do
+        if grep -q "Icecast2" "$file"; then
+            echo "Found 'Icecast2' in $file"
+            sed -i "s/Icecast2/$CALLSIGN/g" "$file"
+            echo "Replaced 'Icecast2' with '$CALLSIGN' in $file"
+        else
+            echo "No 'Icecast2' found in $file; skipping"
+        fi
+    done
 
-    ok "Icecast web interface customized with CALLSIGN '$CALLSIGN'."
+    ok "All .xsl files processed with CALLSIGN '$CALLSIGN'."
 else
-    warn "CALLSIGN not set or Icecast web directory missing; skipping web interface customization."
+    warn "CALLSIGN not set or Icecast web directory missing; skipping .xsl customization."
 fi
 
 
