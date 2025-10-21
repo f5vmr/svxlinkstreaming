@@ -181,42 +181,54 @@ else
     warn "CALLSIGN not set or darkice.cfg missing; skipping substitution."
 fi
 
-# --- Replace 'Icecast2' in Icecast web pages ---
+
+
+# --- TX=Tx1 → TX=MultiTx in svxlink.conf ---
+if [[ -f "$SVXLINK_CONF" ]]; then
+    info "Replacing TX=Tx1 → TX=MultiTx in svxlink.conf logic sections..."
+
+    # SimplexLogic
+    if grep -q '^\[SimplexLogic\]' "$SVXLINK_CONF"; then
+        sed -i '/^\[SimplexLogic\]/,/^\[/ { s/^[[:space:]]*TX[[:space:]]*=[[:space:]]*Tx1/TX=MultiTx/ }' "$SVXLINK_CONF"
+        ok "[SimplexLogic] updated to TX=MultiTx if TX=Tx1 existed"
+    else
+        warn "[SimplexLogic] section not found; skipping"
+    fi
+
+    # RepeaterLogic
+    if grep -q '^\[RepeaterLogic\]' "$SVXLINK_CONF"; then
+        sed -i '/^\[RepeaterLogic\]/,/^\[/ { s/^[[:space:]]*TX[[:space:]]*=[[:space:]]*Tx1/TX=MultiTx/ }' "$SVXLINK_CONF"
+        ok "[RepeaterLogic] updated to TX=MultiTx if TX=Tx1 existed"
+    else
+        warn "[RepeaterLogic] section not found; skipping"
+    fi
+else
+    warn "svxlink.conf missing; cannot modify TX"
+fi
+
+# --- Replace 'callsign' placeholder in darkice.cfg ---
+if [[ -n "$CALLSIGN" && -f "$DEST_DARKICE_CFG" ]]; then
+    sed -i "s/callsign/$CALLSIGN/g" "$DEST_DARKICE_CFG"
+    ok "Replaced 'callsign' placeholder with CALLSIGN '$CALLSIGN' in darkice.cfg."
+else
+    warn "CALLSIGN not set or darkice.cfg missing; skipping substitution."
+fi
+
+# --- Replace 'Icecast2' branding in Icecast web pages ---
 if [[ -n "$CALLSIGN" && -d "$ICECAST_WEB_DIR" ]]; then
     info "Replacing 'Icecast2' branding with CALLSIGN '$CALLSIGN' in Icecast web interface..."
     BACKUP_DIR="${ICECAST_WEB_DIR}_backup_$(date +%Y%m%d_%H%M%S)"
     cp -r "$ICECAST_WEB_DIR" "$BACKUP_DIR"
     ok "Backup of Icecast web files saved to $BACKUP_DIR"
 
+    # Use sudo in case files are root-owned
     find "$ICECAST_WEB_DIR" -type f \
-         \( -iname "*.html" -o -iname "*.htm" -o -iname "*.xsl" -o -iname "*.xml" -o -iname "*.txt" \) \
-         -exec sed -i "s/Icecast2/$CALLSIGN/g" {} +
+        \( -iname "*.html" -o -iname "*.htm" -o -iname "*.xsl" -o -iname "*.xml" -o -iname "*.txt" \) \
+        -exec sudo sed -i "s/Icecast2/$CALLSIGN/g" {} +
 
     ok "Icecast web interface customized with CALLSIGN '$CALLSIGN'."
 else
     warn "CALLSIGN not set or Icecast web directory missing; skipping web interface customization."
-fi
-
-# --- Modify svxlink.conf TX=Tx1 if present ---
-if [[ -f "$SVXLINK_CONF" ]]; then
-    info "Updating 'TX = Tx1' → 'TX=MultiTx' in [SimplexLogic] and [RepeaterLogic] if present..."
-
-    if grep -q '^\[SimplexLogic\]' "$SVXLINK_CONF"; then
-        sed -i '/^\[SimplexLogic\]/,/^\[/ { s/^[[:space:]]*TX[[:space:]]*=[[:space:]]*Tx1\b/TX=MultiTx/ }' "$SVXLINK_CONF"
-        ok "[SimplexLogic] section updated to TX=MultiTx."
-    else
-        warn "[SimplexLogic] section not found; skipping."
-    fi
-
-    if grep -q '^\[RepeaterLogic\]' "$SVXLINK_CONF"; then
-        sed -i '/^\[RepeaterLogic\]/,/^\[/ { s/^[[:space:]]*TX[[:space:]]*=[[:space:]]*Tx1\b/TX=MultiTx/ }' "$SVXLINK_CONF"
-        ok "[RepeaterLogic] section updated to TX=MultiTx."
-    else
-        warn "[RepeaterLogic] section not found; skipping."
-    fi
-
-else
-    warn "svxlink.conf missing; skipping TX replacement."
 fi
 
 
