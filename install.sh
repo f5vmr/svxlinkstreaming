@@ -26,7 +26,7 @@ die() { printf "${YELLOW}ERROR:${NC} %s\n" "$1" >&2; exit 1; }
 info() { printf "${BLUE}→${NC} %s\n" "$1"; }
 ok()   { printf "${GREEN}✔ %s${NC}\n" "$1"; }
 warn() { printf "${YELLOW}⚠ %s${NC}\n" "$1"; }
-outanding() { printf "${BOLD}${YELLOW}‼ %s${NC}\n" "$1"; }
+outstanding() { printf "${BOLD}${YELLOW}‼ %s${NC}\n" "$1"; }
 poster() { printf "${REVERSE}${YELLOW}✔ %s${NC}\n" "$1" >&2; }
 
 [[ $EUID -ne 0 ]] && die "Please run as root (sudo)."
@@ -134,7 +134,7 @@ cp -f "$SRC_DIR/darkice.service" "$DEST_DARKICE_SERVICE"
 cp -f "$SRC_DIR/darkice.sh" "$DEST_SCRIPT"
 chmod +x "$DEST_SCRIPT"
 chown pi:pi "$DEST_SCRIPT" || true
-outanding "Darkice files copied successfully."
+outstanding "Darkice files copied successfully."
 
 # --- DEBUG: verify copied config and variables before substitutions ---
 echo "DEBUG: DEST_DARKICE_CFG = '$DEST_DARKICE_CFG'"
