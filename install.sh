@@ -293,6 +293,25 @@ fi
 echo 
  ok "Setup completed successfully!"
 echo
+info "Restarting with a health check"
+# --- Post-restart sanity check for Darkice + Icecast2 ---
+info "Performing sanity check on stream URL..."
+
+# Restart services to ensure fresh start
+systemctl restart icecast2.service darkice.service
+
+# Wait a few seconds for services to come online
+sleep 5
+
+# Check if Icecast web UI responds
+STREAM_CHECK_URL="http://$PI_IP:8000/"
+if curl -s --head "$STREAM_CHECK_URL" | head -n 1 | grep "200\|302" >/dev/null; then
+    ok "Stream web UI reachable at $STREAM_CHECK_URL — Darkice + Icecast2 appear operational."
+else
+    warn "Stream web UI NOT reachable at $STREAM_CHECK_URL — manual check may be required."
+fi
+
+echo
 info "NOTES:"
 echo " - If [TxStream] was missing, configure svxlink manually."
 echo " - Verify /etc/darkice.cfg for correct Icecast password and mountpoint."
