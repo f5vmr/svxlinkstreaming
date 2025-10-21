@@ -165,6 +165,8 @@ fi
 # --- Replace 'callsign' placeholder in darkice.cfg with actual CALLSIGN from svxlink.conf ---
 if [[ -f "$SVXLINK_CONF" && -f "$DEST_DARKICE_CFG" ]]; then
   CALLSIGN=$(grep -m1 '^[[:space:]]*CALLSIGN=' "$SVXLINK_CONF" | grep -v '^[[:space:]]*#' | head -n1 | sed -E 's/^[[:space:]]*CALLSIGN[[:space:]]*=[[:space:]]*//')
+ echo "DEBUG: CALLSIGN (if already extracted) = '${CALLSIGN:-not set}'"
+
     if [[ -n "$CALLSIGN" ]]; then
     if grep -q "callsign" "$DEST_DARKICE_CFG"; then
       sed -i "s/callsign/$CALLSIGN/" "$DEST_DARKICE_CFG"
