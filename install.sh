@@ -112,7 +112,6 @@ else
     warn "DEBUG: $DEST_DARKICE_CFG does not exist!"
 fi
 echo "DEBUG: STREAM_URL = '$STREAM_URL'"
-echo "DEBUG: CALLSIGN (if already extracted) = '${CALLSIGN:-not set}'"
 
 # --- Install Darkice + Icecast2 ---
 info "Installing Darkice and Icecast2 (interactive password setup follows)..."
@@ -215,22 +214,24 @@ else
     warn "CALLSIGN not set or darkice.cfg missing; skipping substitution."
 fi
 
-# --- Replace 'Icecast2' branding in Icecast web pages ---
+ICECAST_WEB_DIR="/usr/share/icecast2/web"
+
 if [[ -n "$CALLSIGN" && -d "$ICECAST_WEB_DIR" ]]; then
     info "Replacing 'Icecast2' branding with CALLSIGN '$CALLSIGN' in Icecast web interface..."
     BACKUP_DIR="${ICECAST_WEB_DIR}_backup_$(date +%Y%m%d_%H%M%S)"
     cp -r "$ICECAST_WEB_DIR" "$BACKUP_DIR"
     ok "Backup of Icecast web files saved to $BACKUP_DIR"
 
-    # Use sudo in case files are root-owned
+    # Remove sudo inside -exec
     find "$ICECAST_WEB_DIR" -type f \
         \( -iname "*.html" -o -iname "*.htm" -o -iname "*.xsl" -o -iname "*.xml" -o -iname "*.txt" \) \
-        -exec sudo sed -i "s/Icecast2/$CALLSIGN/g" {} +
+        -exec sed -i "s/Icecast2/$CALLSIGN/g" {} +
 
     ok "Icecast web interface customized with CALLSIGN '$CALLSIGN'."
 else
     warn "CALLSIGN not set or Icecast web directory missing; skipping web interface customization."
 fi
+
 
 
 # --- Enable and start services ---
