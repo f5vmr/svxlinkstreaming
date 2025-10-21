@@ -164,42 +164,37 @@ else
 fi
 
 
-# --- Replace 'callsign' placeholder in darkice.cfg with actual CALLSIGN from svxlink.conf ---
-if [[ -f "$SVXLINK_CONF" && -f "$DEST_DARKICE_CFG" ]]; then
-  CALLSIGN=$(grep -m1 '^[[:space:]]*CALLSIGN=' "$SVXLINK_CONF" | grep -v '^[[:space:]]*#' | head -n1 | sed -E 's/^[[:space:]]*CALLSIGN[[:space:]]*=[[:space:]]*//')
- echo "DEBUG: CALLSIGN (if already extracted) = '${CALLSIGN:-not set}'"
-
-    if [[ -n "$CALLSIGN" ]]; then
-    if grep -q "callsign" "$DEST_DARKICE_CFG"; then
-      sed -i "s/callsign/$CALLSIGN/" "$DEST_DARKICE_CFG"
-      ok "Replaced 'callsign' placeholder with actual CALLSIGN '$CALLSIGN' in darkice.cfg."
-    else
-      warn "No 'callsign' placeholder found in $DEST_DARKICE_CFG."
-    fi
-  else
-    warn "CALLSIGN= not found or empty in $SVXLINK_CONF; leaving 'callsign' placeholder as is."
-  fi
+# # --- Extract CALLSIGN from svxlink.conf ---
+if [[ -f "$SVXLINK_CONF" ]]; then
+    CALLSIGN=$(grep -m1 '^[[:space:]]*CALLSIGN[[:space:]]*=' "$SVXLINK_CONF" \
+               | sed -E 's/^[[:space:]]*CALLSIGN[[:space:]]*=[[:space:]]*//')
+    info "DEBUG: CALLSIGN extracted = '$CALLSIGN'"
 else
-  warn "$SVXLINK_CONF missing or darkice.cfg missing; cannot replace callsign."
+    warn "$SVXLINK_CONF not found; cannot extract CALLSIGN"
 fi
 
-# --- Personalize Icecast2 web pages with CALLSIGN ---
-ICECAST_WEB_DIR="/usr/share/icecast2/web"
-
-if [[ -n "${CALLSIGN:-}" && -d "$ICECAST_WEB_DIR" ]]; then
-  info "Replacing 'Icecast2' branding with '$CALLSIGN' in Icecast web interface..."
-  
-  BACKUP_DIR="/usr/share/icecast2/web_backup_$(date +%Y%m%d_%H%M%S)"
-  cp -r "$ICECAST_WEB_DIR" "$BACKUP_DIR"
-  ok "Original Icecast web files backed up to $BACKUP_DIR"
-
-  find "$ICECAST_WEB_DIR" -type f \
-    \( -iname "*.html" -o -iname "*.htm" -o -iname "*.xsl" -o -iname "*.xml" -o -iname "*.txt" \) \
-    -exec sed -i "s/Icecast2/${CALLSIGN}/g" {} +
-
-  ok "Icecast web interface customized with callsign '$CALLSIGN'."
+# --- Replace 'callsign' in darkice.cfg ---
+if [[ -n "$CALLSIGN" && -f "$DEST_DARKICE_CFG" ]]; then
+    sed -i "s/callsign/$CALLSIGN/g" "$DEST_DARKICE_CFG"
+    ok "Replaced 'callsign' placeholder with CALLSIGN '$CALLSIGN' in darkice.cfg."
 else
-  warn "CALLSIGN not available or Icecast web directory missing; skipping web interface customization."
+    warn "CALLSIGN not set or darkice.cfg missing; skipping substitution."
+fi
+
+# --- Replace 'Icecast2' in Icecast web pages ---
+if [[ -n "$CALLSIGN" && -d "$ICECAST_WEB_DIR" ]]; then
+    info "Replacing 'Icecast2' branding with CALLSIGN '$CALLSIGN' in Icecast web interface..."
+    BACKUP_DIR="${ICECAST_WEB_DIR}_backup_$(date +%Y%m%d_%H%M%S)"
+    cp -r "$ICECAST_WEB_DIR" "$BACKUP_DIR"
+    ok "Backup of Icecast web files saved to $BACKUP_DIR"
+
+    find "$ICECAST_WEB_DIR" -type f \
+         \( -iname "*.html" -o -iname "*.htm" -o -iname "*.xsl" -o -iname "*.xml" -o -iname "*.txt" \) \
+         -exec sed -i "s/Icecast2/$CALLSIGN/g" {} +
+
+    ok "Icecast web interface customized with CALLSIGN '$CALLSIGN'."
+else
+    warn "CALLSIGN not set or Icecast web directory missing; skipping web interface customization."
 fi
 
 # --- Modify svxlink.conf TX=Tx1 if present ---
