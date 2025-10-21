@@ -303,7 +303,7 @@ echo "     sudo systemctl status icecast2.service"
 echo
 [[ -n "$STREAM_URL" ]] && info "Public stream URL: $STREAM_URL${NC}"
 echo 
-outsanding "A reboot is not necessary"
+outstanding "A reboot is not necessary"
 echo
 info "Log file: $LOG_FILE"
 echo -e "\n=== Setup complete: $(date) ===\n"
