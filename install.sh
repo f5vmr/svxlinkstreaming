@@ -111,7 +111,6 @@ SRC_DIR="$CWD/svxlinkstreaming"
 DEST_DARKICE_CFG="/etc/darkice.cfg"
 DEST_DARKICE_SERVICE="/etc/systemd/system/darkice.service"
 DEST_SCRIPT="/home/pi/scripts/darkice.sh"
-ICECAST_WEB_DIR="/usr/share/icecast2/web"
 
 # Validate source files
 [[ -f "$SRC_DIR/darkice.cfg" ]] || die "Missing $SRC_DIR/darkice.cfg"
@@ -204,13 +203,13 @@ else
     warn "$SVXLINK_CONF not found; cannot extract CALLSIGN"
 fi
 
-## --- Replace 'callsign' in darkice.cfg ---
-#if [[ -n "$CALLSIGN" && -f "$DEST_DARKICE_CFG" ]]; then
-#    sed -i "s/callsign/$CALLSIGN/g" "$DEST_DARKICE_CFG"
-#    ok "Replaced 'callsign' placeholder with CALLSIGN '$CALLSIGN' in darkice.cfg."
-#else
-#    warn "CALLSIGN not set or darkice.cfg missing; skipping substitution."
-#fi
+# --- Replace 'callsign' in darkice.cfg ---
+if [[ -n "$CALLSIGN" && -f "$DEST_DARKICE_CFG" ]]; then
+    sed -i "s/callsign/$CALLSIGN/g" "$DEST_DARKICE_CFG"
+    ok "Replaced 'callsign' placeholder with CALLSIGN '$CALLSIGN' in darkice.cfg."
+else
+    warn "CALLSIGN not set or darkice.cfg missing; skipping substitution."
+fi
 
 
 
