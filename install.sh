@@ -10,7 +10,7 @@ IFS=$'\n\t'
 LOG_FILE="/var/log/svxlink_stream_setup.log"
 mkdir -p "$(dirname "$LOG_FILE")"
 exec > >(tee -a "$LOG_FILE") 2>&1
-echo -e "${GREEN}\n=== $(date) Starting SvxLink Stream Setup ===\n${NC}"
+echo -e "\n=== $(date) Starting SvxLink Stream Setup ===\n"
 
 # --- Colour definitions ---
 RED='\033[0;31m'
@@ -134,13 +134,13 @@ chown pi:pi "$DEST_SCRIPT" || true
 ok "Darkice files copied successfully."
 
 # --- DEBUG: verify copied config and variables before substitutions ---
-echo "${BLUE}DEBUG: DEST_DARKICE_CFG = '$DEST_DARKICE_CFG'${NC}"
+echo "DEBUG: DEST_DARKICE_CFG = '$DEST_DARKICE_CFG'"
 if [[ -f "$DEST_DARKICE_CFG" ]]; then
-    echo "${BLUE}DEBUG: File exists: $(ls -l "$DEST_DARKICE_CFG")${NC}"
+    echo "DEBUG: File exists: $(ls -l "$DEST_DARKICE_CFG")"
 else
     warn "DEBUG: $DEST_DARKICE_CFG does not exist!"
 fi
-echo "${GREEN}DEBUG: STREAM_URL = '$STREAM_URL'${NC}"
+echo "DEBUG: STREAM_URL = '$STREAM_URL'"
 echo -e "${RED}${BOLD}Use ${PI_IP} for your host in Icecast2 configuration.${NC}"
 
 # --- Install Darkice + Icecast2 ---
@@ -286,19 +286,19 @@ fi
 
 # --- Summary ---
 echo 
-${REVERSE} ok "Setup completed successfully!${NC}"
+ ok "${REVERSE}Setup completed successfully!${NC}"
 echo
-${BLUE}info "NOTES:"
+info "${BLUE}NOTES:"
 echo " - If [TxStream] was missing, configure svxlink manually."
 echo " - Verify /etc/darkice.cfg for correct Icecast password and mountpoint."
 echo " - Access Icecast2 at http://<yourpi>:8000/"
 echo " - Check services with:"
 echo "     sudo systemctl status darkice.service"
-echo "     sudo systemctl status icecast2.service"
+echo "     sudo systemctl status icecast2.service${NC}"
 echo
-[[ -n "$STREAM_URL" ]] && info "${RED}Public stream URL: $STREAM_URL"
-echo ${YELLOW}
-ok "A reboot is not necessary${NC}"
+[[ -n "$STREAM_URL" ]] && info "${RED}Public stream URL: $STREAM_URL${NC}"
+echo 
+ok "A reboot is not necessary"
 echo
 info "Log file: $LOG_FILE"
 echo -e "\n=== Setup complete: $(date) ===\n"
