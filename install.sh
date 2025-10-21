@@ -10,13 +10,16 @@ IFS=$'\n\t'
 LOG_FILE="/var/log/svxlink_stream_setup.log"
 mkdir -p "$(dirname "$LOG_FILE")"
 exec > >(tee -a "$LOG_FILE") 2>&1
-echo -e "\n=== $(date) Starting SvxLink Stream Setup ===\n"
+echo -e "${GREEN}\n=== $(date) Starting SvxLink Stream Setup ===\n${NC}"
 
 # --- Colour definitions ---
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
+BOLD='\033[1m'
+UNDERLINE='\033[4m'
+REVERSE='\033[7m'
 NC='\033[0m' # No colour
 
 die() { printf "${RED}ERROR:${NC} %s\n" "$1" >&2; exit 1; }
@@ -64,8 +67,35 @@ if $SVXLINK_PRESENT; then
 fi
 
 # --- Ask for stream URL (optional note) ---
+# --- Detect Raspberry Pi LAN IP ---
+info "Detecting Raspberry Pi LAN IP address..."
+
+# Try to get the first non-loopback IPv4 address
+PI_IP=$(hostname -I | awk '{print $1}')
+
+if [[ -z "$PI_IP" ]]; then
+  warn "Could not automatically detect LAN IP — defaulting to 127.0.0.1"
+  PI_IP="127.0.0.1"
+else
+  ok "Detected LAN IP: $PI_IP"
+fi
+
+# Display to user and confirm
+whiptail --title "Raspberry Pi IP Detected" \
+  --yesno "Your Raspberry Pi appears to have the IP:\n\n  $PI_IP\n\nUse this as the streaming host for Darkice and Icecast2?" \
+  15 60
+
+if [[ $? -ne 0 ]]; then
+  CUSTOM_IP=$(whiptail --inputbox "Enter the IP or hostname to use for Darkice/Icecast2:" 10 60 "$PI_IP" 3>&1 1>&2 2>&3)
+  if [[ -n "$CUSTOM_IP" ]]; then
+    PI_IP="$CUSTOM_IP"
+  fi
+fi
+
+ok "Streaming host will use: $PI_IP"
+
 STREAM_URL=$(whiptail --inputbox \
-  "Enter your public stream URL (e.g. http://portal.svxlink.uk:8010/stream or \n http://192.168.1.120:8000/stream )\nThis is for your Live Stream." \
+  "Enter your public stream URL  as http://"$PI_IP":8000/stream - This is for your Live Stream." \
   12 80 "" --title "Public stream URL" 3>&1 1>&2 2>&3) || true
 STREAM_URL=${STREAM_URL:-""}
 [[ -n "$STREAM_URL" ]] && ok "Stream URL noted: $STREAM_URL" || warn "No public stream URL provided."
@@ -105,13 +135,14 @@ chown pi:pi "$DEST_SCRIPT" || true
 ok "Darkice files copied successfully."
 
 # --- DEBUG: verify copied config and variables before substitutions ---
-echo "DEBUG: DEST_DARKICE_CFG = '$DEST_DARKICE_CFG'"
+echo "${BLUE}DEBUG: DEST_DARKICE_CFG = '$DEST_DARKICE_CFG'${NC}"
 if [[ -f "$DEST_DARKICE_CFG" ]]; then
-    echo "DEBUG: File exists: $(ls -l "$DEST_DARKICE_CFG")"
+    echo "${BLUE}DEBUG: File exists: $(ls -l "$DEST_DARKICE_CFG")${NC}"
 else
     warn "DEBUG: $DEST_DARKICE_CFG does not exist!"
 fi
-echo "DEBUG: STREAM_URL = '$STREAM_URL'"
+echo "${GREEN}DEBUG: STREAM_URL = '$STREAM_URL'${NC}"
+echo -e "${RED}${BOLD}Use ${PI_IP} for your host in Icecast2 configuration.${NC}"
 
 # --- Install Darkice + Icecast2 ---
 info "Installing Darkice and Icecast2 (interactive password setup follows)..."
@@ -138,7 +169,7 @@ if [[ -f "$ICECAST_XML" ]]; then
         sed -i -r "s/(password *= *)source/\1$ESCAPED_PASS/" "$DEST_DARKICE_CFG"
         ok "Replaced placeholder password = source with actual Icecast source password."
     else
-        warn "$DEST_DARKICE_CFG missing; cannot replace password."
+        warn "${YELLOW}$DEST_DARKICE_CFG missing; cannot replace password.${NC}"
     fi
   else
     warn "Could not extract <source-password>; edit /etc/darkice.cfg manually."
@@ -225,11 +256,11 @@ if [[ -n "$CALLSIGN" && -d "$ICECAST_WEB_DIR" ]]; then
     # Process all .xsl files
     find -L "$ICECAST_WEB_DIR" -type f -iname "*.xsl" | while read -r file; do
         if grep -q "Icecast2" "$file"; then
-            echo "Found 'Icecast2' in $file"
+            echo "${BOLD}Found 'Icecast2' in $file${NC}"
             sed -i "s/Icecast2/$CALLSIGN/g" "$file"
-            echo "Replaced 'Icecast2' with '$CALLSIGN' in $file"
+            echo "${RED}${BOLD}Replaced 'Icecast2' with '$CALLSIGN' in $file${NC}"
         else
-            echo "No 'Icecast2' found in $file; skipping"
+            echo "${YELLOW}No 'Icecast2' found in $file; skipping${NC}"
         fi
     done
 
@@ -255,10 +286,10 @@ else
 fi
 
 # --- Summary ---
+echo 
+${REVERSE} ok "Setup completed successfully!${NC}"
 echo
-ok "Setup completed successfully!"
-echo
-info "NOTES:"
+${BLUE}info "NOTES:"
 echo " - If [TxStream] was missing, configure svxlink manually."
 echo " - Verify /etc/darkice.cfg for correct Icecast password and mountpoint."
 echo " - Access Icecast2 at http://<yourpi>:8000/"
@@ -266,9 +297,9 @@ echo " - Check services with:"
 echo "     sudo systemctl status darkice.service"
 echo "     sudo systemctl status icecast2.service"
 echo
-[[ -n "$STREAM_URL" ]] && info "Public stream URL: $STREAM_URL"
-echo
-ok "A reboot is unnecessary to verify @reboot startup."
+[[ -n "$STREAM_URL" ]] && info "${RED}Public stream URL: $STREAM_URL"
+echo ${YELLOW}
+ok "A reboot is not necessary${NC}"
 echo
 info "Log file: $LOG_FILE"
 echo -e "\n=== Setup complete: $(date) ===\n"
