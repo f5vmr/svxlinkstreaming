@@ -192,8 +192,8 @@ if [[ -f "$DEST_DARKICE_CFG" && -n "$STREAM_URL" ]]; then
     sed -i -E 's#^[[:space:]]*url[[:space:]]*=[[:space:]]*"?your_domain"?#url='"$ESCAPED_URL"'#' "$DEST_DARKICE_CFG"
 
     ok "darkice.cfg updated: url = $STREAM_URL"
-    sed -i "s/^server[[:space:]]*=[[:space:]]*localhost/server = $PI_IP/" "$DEST_DARKICE_CFG"
-    poster "Updated server address in darkice.cfg to $PI_IP."
+    #sed -i "s/^server[[:space:]]*=[[:space:]]*localhost/server = $PI_IP/" "$DEST_DARKICE_CFG"
+    #poster "Updated server address in darkice.cfg to $PI_IP."
 else
     warn "darkice.cfg not found or no URL provided; skipping URL substitution."
 fi
