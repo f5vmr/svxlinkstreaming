@@ -26,6 +26,8 @@ die() { printf "${YELLOW}ERROR:${NC} %s\n" "$1" >&2; exit 1; }
 info() { printf "${BLUE}→${NC} %s\n" "$1"; }
 ok()   { printf "${GREEN}✔ %s${NC}\n" "$1"; }
 warn() { printf "${YELLOW}⚠ %s${NC}\n" "$1"; }
+outanding() { printf "${BOLD}${YELLOW}‼ %s${NC}\n" "$1"; }
+poster() { printf "${REVERSE}${YELLOW}✔ %s${NC}\n" "$1" >&2; }
 
 [[ $EUID -ne 0 ]] && die "Please run as root (sudo)."
 
@@ -77,7 +79,7 @@ if [[ -z "$PI_IP" ]]; then
   warn "Could not automatically detect LAN IP — defaulting to 127.0.0.1"
   PI_IP="127.0.0.1"
 else
-  ok "Detected LAN IP: $PI_IP"
+  poster "Detected LAN IP: $PI_IP"
 fi
 
 # Display to user and confirm
@@ -92,7 +94,7 @@ if [[ $? -ne 0 ]]; then
   fi
 fi
 
-ok "Streaming host will use: $PI_IP"
+poster "Streaming host will use: $PI_IP"
 
 STREAM_URL=$(whiptail --inputbox \
   "Enter your public stream URL  as http://"$PI_IP":8000/stream - This is for your Live Stream." \
@@ -132,7 +134,7 @@ cp -f "$SRC_DIR/darkice.service" "$DEST_DARKICE_SERVICE"
 cp -f "$SRC_DIR/darkice.sh" "$DEST_SCRIPT"
 chmod +x "$DEST_SCRIPT"
 chown pi:pi "$DEST_SCRIPT" || true
-ok "Darkice files copied successfully."
+outanding "Darkice files copied successfully."
 
 # --- DEBUG: verify copied config and variables before substitutions ---
 echo "DEBUG: DEST_DARKICE_CFG = '$DEST_DARKICE_CFG'"
@@ -191,7 +193,7 @@ if [[ -f "$DEST_DARKICE_CFG" && -n "$STREAM_URL" ]]; then
 
     ok "darkice.cfg updated: url = $STREAM_URL"
     sed -i "s/^server[[:space:]]*=[[:space:]]*localhost/server = $PI_IP/" "$DEST_DARKICE_CFG"
-    ok "Updated server address in darkice.cfg to $PI_IP."
+    poster "Updated server address in darkice.cfg to $PI_IP."
 else
     warn "darkice.cfg not found or no URL provided; skipping URL substitution."
 fi
@@ -258,11 +260,11 @@ if [[ -n "$CALLSIGN" && -d "$ICECAST_WEB_DIR" ]]; then
     # Process all .xsl files
     find -L "$ICECAST_WEB_DIR" -type f -iname "*.xsl" | while read -r file; do
         if grep -q "Icecast2" "$file"; then
-            echo "${BOLD}Found 'Icecast2' in $file${NC}"
+            echo "Found 'Icecast2' in $file"
             sed -i "s/Icecast2/$CALLSIGN/g" "$file"
-            echo "${YELLOW}${BOLD}Replaced 'Icecast2' with '$CALLSIGN' in $file${NC}"
+            echo "Replaced 'Icecast2' with '$CALLSIGN' in $file"
         else
-            echo "${YELLOW}No 'Icecast2' found in $file; skipping${NC}"
+            echo "No 'Icecast2' found in $file; skipping"
         fi
     done
 
@@ -289,19 +291,19 @@ fi
 
 # --- Summary ---
 echo 
- ok "${REVERSE}Setup completed successfully!${NC}"
+ ok "Setup completed successfully!"
 echo
-info "${BLUE}NOTES:"
+info "NOTES:"
 echo " - If [TxStream] was missing, configure svxlink manually."
 echo " - Verify /etc/darkice.cfg for correct Icecast password and mountpoint."
 echo " - Access Icecast2 at http://<yourpi>:8000/"
 echo " - Check services with:"
 echo "     sudo systemctl status darkice.service"
-echo "     sudo systemctl status icecast2.service${NC}"
+echo "     sudo systemctl status icecast2.service"
 echo
-[[ -n "$STREAM_URL" ]] && info "${YELLOW}Public stream URL: $STREAM_URL${NC}"
+[[ -n "$STREAM_URL" ]] && info "Public stream URL: $STREAM_URL${NC}"
 echo 
-ok "A reboot is not necessary"
+outsanding "A reboot is not necessary"
 echo
 info "Log file: $LOG_FILE"
 echo -e "\n=== Setup complete: $(date) ===\n"
