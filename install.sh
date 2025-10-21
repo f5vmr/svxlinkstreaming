@@ -22,7 +22,7 @@ UNDERLINE='\033[4m'
 REVERSE='\033[7m'
 NC='\033[0m' # No colour
 
-die() { printf "${RED}ERROR:${NC} %s\n" "$1" >&2; exit 1; }
+die() { printf "${YELLOW}ERROR:${NC} %s\n" "$1" >&2; exit 1; }
 info() { printf "${BLUE}→${NC} %s\n" "$1"; }
 ok()   { printf "${GREEN}✔ %s${NC}\n" "$1"; }
 warn() { printf "${YELLOW}⚠ %s${NC}\n" "$1"; }
@@ -142,7 +142,7 @@ else
     warn "DEBUG: $DEST_DARKICE_CFG does not exist!"
 fi
 echo "DEBUG: STREAM_URL = '$STREAM_URL'"
-echo -e "${RED}${BOLD}Use ${PI_IP} for your host in Icecast2 configuration.${NC}"
+echo -e "Use ${YELLOW}${REVERSE} ${PI_IP}${NC} for your host in Icecast2 configuration."
 
 # --- Install Darkice + Icecast2 ---
 info "Installing Darkice and Icecast2 (interactive password setup follows)..."
@@ -258,7 +258,7 @@ if [[ -n "$CALLSIGN" && -d "$ICECAST_WEB_DIR" ]]; then
         if grep -q "Icecast2" "$file"; then
             echo "${BOLD}Found 'Icecast2' in $file${NC}"
             sed -i "s/Icecast2/$CALLSIGN/g" "$file"
-            echo "${RED}${BOLD}Replaced 'Icecast2' with '$CALLSIGN' in $file${NC}"
+            echo "${YELLOW}${BOLD}Replaced 'Icecast2' with '$CALLSIGN' in $file${NC}"
         else
             echo "${YELLOW}No 'Icecast2' found in $file; skipping${NC}"
         fi
@@ -297,7 +297,7 @@ echo " - Check services with:"
 echo "     sudo systemctl status darkice.service"
 echo "     sudo systemctl status icecast2.service${NC}"
 echo
-[[ -n "$STREAM_URL" ]] && info "${RED}Public stream URL: $STREAM_URL${NC}"
+[[ -n "$STREAM_URL" ]] && info "${YELLOW}Public stream URL: $STREAM_URL${NC}"
 echo 
 ok "A reboot is not necessary"
 echo
