@@ -164,23 +164,27 @@ fi
 
 # --- Modify svxlink.conf only if TxStream found ---
 if $HAS_TXSTREAM; then
-  info "Updating TX=Tx1 → TX=MultiTx in [Tx1] section..."
+  info "Updating 'TX = Tx1' (any spacing) → 'TX=MultiTx' in [Tx1] section..."
   TMPFILE=$(mktemp)
+
   awk '
     BEGIN {in_tx1=0}
     /^\[Tx1\]/ {print; in_tx1=1; next}
-    /^\[.*\]/ {if(in_tx1){in_tx1=0}; print; next}
+    /^\[.*\]/  {if(in_tx1){in_tx1=0}; print; next}
     {
-      if(in_tx1 && $0 ~ /^[[:space:]]*TX[[:space:]]*=[[:space:]]*Tx1/){
-        sub(/TX[[:space:]]*=[[:space:]]*Tx1/, "TX=MultiTx")
+      if (in_tx1 && $0 ~ /^[[:space:]]*TX[[:space:]]*=[[:space:]]*Tx1[[:space:]]*$/) {
+        # Normalize spacing to single = and set to MultiTx
+        sub(/^[[:space:]]*TX[[:space:]]*=[[:space:]]*Tx1[[:space:]]*$/, "TX=MultiTx")
       }
       print
     }' "$SVXLINK_CONF" > "$TMPFILE"
+
   mv "$TMPFILE" "$SVXLINK_CONF"
-  ok "svxlink.conf updated for MultiTx."
+  ok "svxlink.conf [Tx1] section normalized and updated to TX=MultiTx."
 else
   warn "Skipping svxlink.conf modification."
 fi
+
 
 # --- Enable and start services ---
 systemctl daemon-reload
