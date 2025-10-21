@@ -134,17 +134,23 @@ else
 fi
 # --- Replace 'your_domain' with provided public URL in darkice.cfg ---
 if [[ -n "$STREAM_URL" ]]; then
-  # Strip protocol prefix (http:// or https://) and port (if any) for darkice
-  CLEAN_DOMAIN=$(echo "$STREAM_URL" | sed -E 's#https?://##; s#/.*##')
+  # Remove only a trailing slash if user added one accidentally
+  CLEAN_URL=$(echo "$STREAM_URL" | sed -E 's#/$##')
+
+  # Escape special characters for sed
+  ESCAPED_URL=$(printf '%s\n' "$CLEAN_URL" | sed -e 's/[\/&]/\\&/g')
+
   if grep -q "your_domain" "$DEST_DARKICE_CFG"; then
-    sed -i "s/your_domain/$CLEAN_DOMAIN/" "$DEST_DARKICE_CFG"
-    ok "Replaced 'your_domain' with '$CLEAN_DOMAIN' in darkice.cfg."
+    # Match 'server =' or 'server=' variants
+    sed -i -E "s#(server[[:space:]]*=[[:space:]]*)your_domain#\1$ESCAPED_URL#" "$DEST_DARKICE_CFG"
+    ok "Replaced 'your_domain' with full URL '$CLEAN_URL' in darkice.cfg."
   else
     warn "No 'your_domain' placeholder found in $DEST_DARKICE_CFG; skipping domain substitution."
   fi
 else
   warn "No stream URL provided; 'your_domain' left unchanged in darkice.cfg."
 fi
+
 # --- Replace 'callsign' placeholder in darkice.cfg with actual CALLSIGN from svxlink.conf ---
 if [[ -f "$SVXLINK_CONF" ]]; then
   CALLSIGN=$(grep -m1 '^CALLSIGN=' "$SVXLINK_CONF" | cut -d'=' -f2 | tr -d '[:space:]')
